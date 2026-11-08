@@ -1,5 +1,6 @@
 package restaurant.order;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -8,9 +9,14 @@ import java.util.Map;
 
 import restaurant.common.Guard;
 import restaurant.customer.Customer;
+import restaurant.exception.EmptyOrderException;
+import restaurant.exception.InvalidInputException;
 import restaurant.exception.ItemNotInOrderException;
 import restaurant.exception.OrderClosedException;
+import restaurant.exception.OrderNotPaidException;
 import restaurant.menu.MenuItem;
+import restaurant.payment.Payment;
+import restaurant.payment.PaymentMethod;
 
 /** A customer's order. It owns its lines and enforces which changes are allowed at each status. */
 public final class Order {
@@ -20,6 +26,7 @@ public final class Order {
     private final LocalDate date;
     private final Map<String, OrderLine> lines = new LinkedHashMap<>();
     private OrderStatus status = OrderStatus.OPEN;
+    private Payment payment;
 
     public Order(String id, Customer customer, LocalDate date) {
         this.id = Guard.requireNotBlank(id, "Order id");
@@ -65,6 +72,32 @@ public final class Order {
         if (lines.remove(itemId) == null) {
             throw new ItemNotInOrderException(id, itemId);
         }
+    }
+
+    /**
+     * Takes payment through the given method and closes the order.
+     * The order stays open if the method refuses the payment.
+     */
+    public Payment pay(PaymentMethod method, BigDecimal total, LocalDate paymentDate) {
+        requireOpen();
+        Guard.requireNotNull(method, "Payment method");
+        Guard.requireNotNull(paymentDate, "Payment date");
+        if (lines.isEmpty()) {
+            throw new EmptyOrderException(id);
+        }
+        if (paymentDate.isBefore(date)) {
+            throw new InvalidInputException("Payment date " + paymentDate + " is before order date " + date + ".");
+        }
+        payment = method.pay(total, paymentDate);
+        status = OrderStatus.PAID;
+        return payment;
+    }
+
+    public Payment getPayment() {
+        if (status != OrderStatus.PAID) {
+            throw new OrderNotPaidException(id);
+        }
+        return payment;
     }
 
     public void cancel() {

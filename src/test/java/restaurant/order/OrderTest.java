@@ -12,21 +12,29 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 
 import restaurant.customer.Customer;
+import restaurant.exception.EmptyOrderException;
+import restaurant.exception.InsufficientCashException;
 import restaurant.exception.InvalidInputException;
 import restaurant.exception.ItemNotInOrderException;
 import restaurant.exception.OrderClosedException;
+import restaurant.exception.OrderNotPaidException;
 import restaurant.menu.Drink;
 import restaurant.menu.Food;
 import restaurant.menu.MenuItem;
+import restaurant.payment.CashPayment;
+import restaurant.payment.Payment;
+import restaurant.payment.PaymentMethod;
 
 class OrderTest {
 
     private static final LocalDate DATE = LocalDate.of(2026, 11, 8);
+    private static final BigDecimal TOTAL = new BigDecimal("150.00");
 
     private final Customer customer = new Customer("C1", "Ayse");
     private final MenuItem burger = new Food("F1", "Burger", new BigDecimal("150.00"), 15);
     private final MenuItem cola = new Drink("D1", "Cola", new BigDecimal("40.00"), 330);
     private final Order order = new Order("ORD-1", customer, DATE);
+    private final PaymentMethod cash = new CashPayment(new BigDecimal("200.00"));
 
     @Test
     void newOrderIsOpen() {
@@ -235,6 +243,183 @@ class OrderTest {
     void cancellingTwiceThrows() {
         // Arrange
         order.cancel();
+
+        // Act + Assert
+        assertThrows(
+                OrderClosedException.class,
+                order::cancel
+        );
+    }
+
+    @Test
+    void payingMarksTheOrderAsPaid() {
+        // Arrange
+        order.addItem(burger, 1);
+
+        // Act
+        order.pay(cash, TOTAL, DATE);
+
+        // Assert
+        assertEquals(OrderStatus.PAID, order.getStatus());
+    }
+
+    @Test
+    void payingChargesTheGivenTotal() {
+        // Arrange
+        order.addItem(burger, 1);
+
+        // Act
+        Payment payment = order.pay(cash, TOTAL, DATE);
+
+        // Assert
+        assertEquals(TOTAL, payment.getAmountCharged());
+    }
+
+    @Test
+    void paidOrderKeepsItsPayment() {
+        // Arrange
+        order.addItem(burger, 1);
+        Payment payment = order.pay(cash, TOTAL, DATE);
+
+        // Act
+        Payment stored = order.getPayment();
+
+        // Assert
+        assertSame(payment, stored);
+    }
+
+    @Test
+    void payingOnTheOrderDateIsAccepted() {
+        // Arrange
+        order.addItem(burger, 1);
+
+        // Act
+        Payment payment = order.pay(cash, TOTAL, DATE);
+
+        // Assert
+        assertEquals(DATE, payment.getDate());
+    }
+
+    @Test
+    void payingTheDayBeforeTheOrderDateIsRejected() {
+        // Arrange
+        order.addItem(burger, 1);
+        LocalDate dayBefore = DATE.minusDays(1);
+
+        // Act + Assert
+        InvalidInputException ex = assertThrows(
+                InvalidInputException.class,
+                () -> order.pay(cash, TOTAL, dayBefore)
+        );
+        assertEquals("Payment date 2026-11-07 is before order date 2026-11-08.", ex.getMessage());
+    }
+
+    @Test
+    void payingAnEmptyOrderThrows() {
+        // Act + Assert
+        EmptyOrderException ex = assertThrows(
+                EmptyOrderException.class,
+                () -> order.pay(cash, TOTAL, DATE)
+        );
+        assertEquals("Order ORD-1 has no items and cannot be paid.", ex.getMessage());
+    }
+
+    @Test
+    void payingACancelledOrderThrows() {
+        // Arrange
+        order.addItem(burger, 1);
+        order.cancel();
+
+        // Act + Assert
+        assertThrows(
+                OrderClosedException.class,
+                () -> order.pay(cash, TOTAL, DATE)
+        );
+    }
+
+    @Test
+    void payingTwiceThrows() {
+        // Arrange
+        order.addItem(burger, 1);
+        order.pay(cash, TOTAL, DATE);
+
+        // Act + Assert
+        OrderClosedException ex = assertThrows(
+                OrderClosedException.class,
+                () -> order.pay(cash, TOTAL, DATE)
+        );
+        assertEquals("Order ORD-1 is PAID and can no longer be changed.", ex.getMessage());
+    }
+
+    @Test
+    void payingWithoutAMethodIsRejected() {
+        // Arrange
+        order.addItem(burger, 1);
+
+        // Act + Assert
+        InvalidInputException ex = assertThrows(
+                InvalidInputException.class,
+                () -> order.pay(null, TOTAL, DATE)
+        );
+        assertEquals("Payment method must not be null.", ex.getMessage());
+    }
+
+    @Test
+    void payingWithoutADateIsRejected() {
+        // Arrange
+        order.addItem(burger, 1);
+
+        // Act + Assert
+        assertThrows(
+                InvalidInputException.class,
+                () -> order.pay(cash, TOTAL, null)
+        );
+    }
+
+    @Test
+    void refusedPaymentLeavesTheOrderOpen() {
+        // Arrange
+        order.addItem(burger, 1);
+        PaymentMethod tooLittleCash = new CashPayment(new BigDecimal("1.00"));
+
+        // Act
+        assertThrows(
+                InsufficientCashException.class,
+                () -> order.pay(tooLittleCash, TOTAL, DATE)
+        );
+
+        // Assert
+        assertEquals(OrderStatus.OPEN, order.getStatus());
+    }
+
+    @Test
+    void askingForThePaymentOfAnUnpaidOrderThrows() {
+        // Act + Assert
+        OrderNotPaidException ex = assertThrows(
+                OrderNotPaidException.class,
+                order::getPayment
+        );
+        assertEquals("Order ORD-1 has not been paid.", ex.getMessage());
+    }
+
+    @Test
+    void addingToAPaidOrderThrows() {
+        // Arrange
+        order.addItem(burger, 1);
+        order.pay(cash, TOTAL, DATE);
+
+        // Act + Assert
+        assertThrows(
+                OrderClosedException.class,
+                () -> order.addItem(cola, 1)
+        );
+    }
+
+    @Test
+    void cancellingAPaidOrderThrows() {
+        // Arrange
+        order.addItem(burger, 1);
+        order.pay(cash, TOTAL, DATE);
 
         // Act + Assert
         assertThrows(
