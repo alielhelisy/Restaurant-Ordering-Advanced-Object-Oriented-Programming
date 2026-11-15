@@ -17,6 +17,7 @@ import restaurant.order.InMemoryOrderRepository;
 import restaurant.order.Order;
 import restaurant.payment.CardPayment;
 import restaurant.payment.CashPayment;
+import restaurant.payment.MealCardPayment;
 import restaurant.payment.Payment;
 import restaurant.pricing.PriceCalculator;
 import restaurant.pricing.ServiceChargeDecorator;
@@ -77,5 +78,17 @@ class OrderServiceFullFlowTest {
 
         // Assert
         assertEquals(new BigDecimal("314.16"), payment.getAmountCharged());
+    }
+
+    @Test
+    void mealCardCustomerPaysTheTotalFromTheCardBalance() {
+        // Arrange
+        MealCardPayment mealCard = new MealCardPayment(new BigDecimal("500.00"));
+
+        // Act
+        service.payOrder(order.getId(), mealCard, DATE);
+
+        // Assert
+        assertEquals(new BigDecimal("192.00"), mealCard.getBalance());
     }
 }
