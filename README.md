@@ -20,7 +20,7 @@ mvn test
 | `restaurant.customer` | The customer who places an order |
 | `restaurant.order` | Orders, their lines and where they are stored |
 | `restaurant.payment` | Cash, card and meal card payments (Strategy) |
-| `restaurant.pricing` | Subtotal, tax and service charge (Decorator) |
+| `restaurant.pricing` | Subtotal, tax, service charge and discount (Decorator) |
 | `restaurant.service` | The restaurant operations |
 | `restaurant.exception` | One base exception and the specific ones |
 | `restaurant.common` | Shared input checks |
@@ -32,6 +32,7 @@ mvn test
 | Tax on food | 10% |
 | Tax on drinks | 20% |
 | Tax on desserts | 5% |
+| Discount | A percentage below 100% taken off the amount calculated so far |
 | Cash | The amount handed over must cover the amount due, and the difference is given back |
 | Card | A 2% fee is added, the card must not be expired, and the charge must fit the card limit |
 | Meal card | The card balance must cover the amount due, and the amount is taken from the balance |
