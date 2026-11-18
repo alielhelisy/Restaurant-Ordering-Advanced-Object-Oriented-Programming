@@ -34,7 +34,7 @@ public final class OrderService {
     }
 
     public List<MenuItem> getMenu() {
-        return menu.getItems();
+        return menu.getAvailableItems();
     }
 
     public Order createOrder(Customer customer, LocalDate date) {
@@ -46,7 +46,7 @@ public final class OrderService {
 
     public void addItem(String orderId, String itemId, int quantity) {
         Order order = orders.findById(orderId);
-        order.addItem(menu.findById(itemId), quantity);
+        order.addItem(menu.findAvailableById(itemId), quantity);
         orders.save(order);
     }
 

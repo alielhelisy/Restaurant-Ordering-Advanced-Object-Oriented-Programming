@@ -18,9 +18,11 @@ import restaurant.exception.EmptyOrderException;
 import restaurant.exception.InsufficientCashException;
 import restaurant.exception.InvalidInputException;
 import restaurant.exception.ItemNotInOrderException;
+import restaurant.exception.ItemUnavailableException;
 import restaurant.exception.MenuItemNotFoundException;
 import restaurant.exception.OrderClosedException;
 import restaurant.exception.OrderNotFoundException;
+import restaurant.menu.Drink;
 import restaurant.menu.Food;
 import restaurant.menu.Menu;
 import restaurant.menu.MenuItem;
@@ -200,6 +202,33 @@ class OrderServiceTest {
                 MenuItemNotFoundException.class,
                 () -> service.addItem(order.getId(), "X9", 1)
         );
+    }
+
+    @Test
+    void addItemThrowsForADeactivatedItem() {
+        // Arrange
+        Order order = service.createOrder(customer, DATE);
+        menu.deactivate("F1");
+
+        // Act + Assert
+        assertThrows(
+                ItemUnavailableException.class,
+                () -> service.addItem(order.getId(), "F1", 1)
+        );
+    }
+
+    @Test
+    void getMenuLeavesOutDeactivatedItems() {
+        // Arrange
+        MenuItem cola = new Drink("D1", "Cola", new BigDecimal("40.00"), 330);
+        menu.addItem(cola);
+        menu.deactivate("F1");
+
+        // Act
+        List<MenuItem> items = service.getMenu();
+
+        // Assert
+        assertEquals(List.of(cola), items);
     }
 
     @Test
