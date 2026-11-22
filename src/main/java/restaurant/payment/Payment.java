@@ -35,4 +35,9 @@ public final class Payment {
     public LocalDate getDate() {
         return date;
     }
+
+    @Override
+    public String toString() {
+        return "Payment(" + methodName + ", " + amountCharged + ", change " + changeGiven + ", " + date + ")";
+    }
 }

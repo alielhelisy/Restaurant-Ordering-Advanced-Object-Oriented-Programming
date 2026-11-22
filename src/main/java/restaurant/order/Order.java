@@ -110,4 +110,9 @@ public final class Order {
             throw new OrderClosedException(id, status.name());
         }
     }
+
+    @Override
+    public String toString() {
+        return "Order(" + id + ", " + customer.getName() + ", " + status + ", " + getLines() + ")";
+    }
 }

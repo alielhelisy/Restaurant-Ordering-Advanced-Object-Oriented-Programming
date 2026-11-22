@@ -30,4 +30,9 @@ public final class OrderLine {
     void increaseQuantity(int extra) {
         quantity += extra;
     }
+
+    @Override
+    public String toString() {
+        return quantity + " x " + item.getName();
+    }
 }

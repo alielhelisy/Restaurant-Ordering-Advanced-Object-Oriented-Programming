@@ -33,4 +33,10 @@ public abstract class MenuItem {
 
     /** Returns the tax rate of this kind of item, for example 0.10 for ten percent. */
     public abstract BigDecimal getTaxRate();
+
+    /** Readable text, so a failing test prints the item instead of a memory address. */
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "(" + id + ", " + name + ", " + price + ")";
+    }
 }
