@@ -25,6 +25,17 @@ mvn test
 | `restaurant.exception` | One base exception and the specific ones |
 | `restaurant.common` | Shared input checks |
 
+## Design
+
+![Class diagram](docs/class-diagram.png)
+
+| Idea | Where |
+| --- | --- |
+| Strategy | `PaymentMethod` with `CashPayment`, `CardPayment` and `MealCardPayment`; `Order.pay` uses whichever one it is given |
+| Decorator | `PriceCalculator` with `SubtotalCalculator`; `TaxDecorator`, `ServiceChargeDecorator` and `DiscountDecorator` wrap another calculator |
+| Dependency injection | `OrderService` gets its `OrderRepository` and `PriceCalculator` through the constructor, so tests can pass fakes |
+| Exceptions | Every project exception extends the unchecked `RestaurantException` |
+
 ## Rules used
 
 | Rule | Value |
